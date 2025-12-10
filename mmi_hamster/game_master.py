@@ -37,13 +37,21 @@ class GameMaster(Node):
         super().__init__("game_master")
 
         # --- Configuration ---
-        self.cooldown_seconds = 30.0          # minimum time between 2 rewards
-        self.after_smile_delay = 1.5          # delay from smile to math start (s)
+        self.cooldown_seconds = float(
+            self.declare_parameter("cooldown_seconds", 30.0).value
+        )                                     # minimum time between 2 rewards
+        self.after_smile_delay = float(
+            self.declare_parameter("after_smile_delay", 2.5).value
+        )                                     # delay from smile to math start (s)
+        self.reward_delay = float(
+            self.declare_parameter("reward_delay", 2.0).value
+        )                                     # pause after blow success before reward
 
         # --- State ---
         self.stage = self.STAGE_WAIT_FACE
         self.first_smile_seen = False
         self.smile_time = None                # rclpy Time
+        self.reward_pending_start = None      # rclpy Time when blow success was confirmed
 
         self.reward_count = 0
         self.last_reward_time = None          # rclpy Time of last Smarties reward
@@ -109,13 +117,19 @@ class GameMaster(Node):
         """Reset to initial state: waiting for a smile."""
         self.first_smile_seen = False
         self.smile_time = None
+        self.reward_pending_start = None
 
         # Stop ongoing challenges
         self.math_cancel_pub.publish(Empty())
         self.send_cmd("BLOW_CANCEL")
 
-        # Let Arduino show its idle screen
-        self.send_cmd("GAME_IDLE")
+        # If cooldown is active, keep showing the countdown instead of idle
+        remaining = self.get_cooldown_remaining_seconds()
+        if remaining > 0:
+            self.send_cmd(f"SMARTIES_COOLDOWN {remaining}")
+        else:
+            # Let Arduino show its idle screen
+            self.send_cmd("GAME_IDLE")
         # Turn off LED
         self.send_cmd("LED 0 0 0")
 
@@ -158,6 +172,16 @@ class GameMaster(Node):
             return
 
         if code == 2 and not self.first_smile_seen:
+            # If a smile arrives but reward cooldown is still active, block immediately
+            remaining = self.get_cooldown_remaining_seconds()
+            if remaining > 0:
+                self.get_logger().info(
+                    f"Reward cooldown active, {remaining}s remaining. Ignoring smile."
+                )
+                self.send_cmd(f"SMARTIES_COOLDOWN {remaining}")
+                self.send_cmd("SND COUNT")
+                return
+
             # First smile detected
             self.first_smile_seen = True
             self.smile_time = self.get_clock().now()
@@ -173,10 +197,19 @@ class GameMaster(Node):
     # Timer: after-smile delay -> start math
     # =========================================================
     def timer_callback(self):
+        now = self.get_clock().now()
+
         if self.stage == self.STAGE_AFTER_SMILE and self.smile_time is not None:
-            elapsed = (self.get_clock().now() - self.smile_time).nanoseconds / 1e9
+            elapsed = (now - self.smile_time).nanoseconds / 1e9
             if elapsed >= self.after_smile_delay:
                 self.set_stage(self.STAGE_MATH)
+
+        # Optional pause after the blow success before giving the reward
+        if self.stage == self.STAGE_BLOW and self.reward_pending_start is not None:
+            elapsed_since_blow = (now - self.reward_pending_start).nanoseconds / 1e9
+            if elapsed_since_blow >= self.reward_delay:
+                self.reward_pending_start = None
+                self.trigger_reward()
 
     # =========================================================
     # Math result handling
@@ -214,6 +247,9 @@ class GameMaster(Node):
         if self.stage != self.STAGE_BLOW:
             # Ignore stray events
             return
+        if self.reward_pending_start is not None:
+            # Already waiting to trigger a reward
+            return
 
         remaining = self.get_cooldown_remaining_seconds()
         if remaining > 0:
@@ -230,8 +266,12 @@ class GameMaster(Node):
             self.set_stage(self.STAGE_WAIT_FACE)
             return
 
-        # Cooldown OK -> reward
-        self.trigger_reward()
+        # Cooldown OK -> delay the reward a bit for demo pacing
+        self.reward_pending_start = self.get_clock().now()
+        self.get_logger().info(
+            f"Cooldown OK, arming reward in {self.reward_delay:.1f}s for demo pacing."
+        )
+        self.send_cmd("SND COUNT")
 
 
     # =========================================================
@@ -283,6 +323,10 @@ class GameMaster(Node):
 
         # Back to initial stage
         self.set_stage(self.STAGE_WAIT_FACE)
+        # Immediately show cooldown countdown if applicable
+        remaining = self.get_cooldown_remaining_seconds()
+        if remaining > 0:
+            self.send_cmd(f"SMARTIES_COOLDOWN {remaining}")
 
 
 def main(args=None):

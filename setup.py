@@ -25,12 +25,10 @@ setup(
     entry_points={
         'console_scripts': [
             'cam_reader = mmi_hamster.cam_reader:main',
-            'image_processor = mmi_hamster.image_processor:main',
             'microcontroller_communicator = mmi_hamster.microcontroller_communicator:main',
             
             'face_smile_processor = mmi_hamster.face_smile_processor:main',
             'math_quiz_node = mmi_hamster.math_quiz_node:main',
-            'blow_challenge_node = mmi_hamster.blow_challenge_node:main',
             'game_master = mmi_hamster.game_master:main',
         ],
     },

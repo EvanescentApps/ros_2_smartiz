@@ -27,7 +27,7 @@ class MicrocontrollerCommunicator(Node):
         super().__init__("microcontroller_communicator")
 
         # --- Params ---
-        self.declare_parameter("port", "/dev/ttyACM0")
+        self.declare_parameter("port", "/dev/ttyACM1")
         self.declare_parameter("baudrate", 115200)
 
         port = self.get_parameter("port").get_parameter_value().string_value

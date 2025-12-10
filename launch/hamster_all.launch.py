@@ -30,12 +30,6 @@ def generate_launch_description():
         ),
         Node(
             package="mmi_hamster",
-            executable="blow_challenge_node",
-            name="blow_challenge_node",
-            output="screen",
-        ),
-        Node(
-            package="mmi_hamster",
             executable="game_master",
             name="game_master",
             output="screen",
