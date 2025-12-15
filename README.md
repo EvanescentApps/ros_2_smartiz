@@ -1,4 +1,5 @@
-# Smartiz+ ROS2 + Arduino Game
+# Controlled-Access Smarties Dispenser!
+<img width="513" height="750" alt="image" src="https://github.com/user-attachments/assets/82ee855d-105d-44fe-8d77-8c8c2e5c9c6a" />
 
 Interactive Smarties dispenser that mixes computer vision, an IR remote math quiz, and a blow sensor challenge. A ROS2 stack orchestrates the flow (smile -> math -> blow -> reward) while an Arduino drives the LCD, RGB LED, buzzer, IR decoding, blow sensor, and the servo-controlled trapdoor.
 
