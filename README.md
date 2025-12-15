@@ -2,6 +2,8 @@
 
 Interactive Smarties dispenser that mixes computer vision, an IR remote math quiz, and a blow sensor challenge. A ROS2 stack orchestrates the flow (smile -> math -> blow -> reward) while an Arduino drives the LCD, RGB LED, buzzer, IR decoding, blow sensor, and the servo-controlled trapdoor.
 
+<img width="4000" height="3000" alt="20251209_111410" src="https://github.com/user-attachments/assets/11e21c5f-5b11-4132-967e-bf62b681c358" />
+
 ## System Overview
 - **Camera → Face/Smile detection**: `cam_reader` publishes `/camera/image_raw`; `face_smile_processor` uses Haar cascades to publish `/dominant_color_code` (0 no face, 1 face, 2 smile).
 - **GameMaster** (`mmi_hamster/game_master.py`): orchestrates the stages, sends UI/sound/servo commands to the Arduino on `/smartiz/arduino_cmd`, and handles cooldowns between rewards.
@@ -15,6 +17,8 @@ Interactive Smarties dispenser that mixes computer vision, an IR remote math qui
 - Control: `/smartiz/math_start` (Empty), `/smartiz/math_cancel` (Empty)
 - Output to Arduino: `/smartiz/arduino_cmd` (String)
 - Results: `/smartiz/math_result` (Bool)
+
+<img width="3000" height="4000" alt="20251209_111725" src="https://github.com/user-attachments/assets/a2b6b655-55d2-4acb-a9ff-86838a0b5311" />
 
 ## Arduino Sketch (arduino_code.ino/arduino_code.ino.ino)
 - Hardware: RGB LED (pins 9/10/11), buzzer (12), servo (2), IR receiver (13), LCD RS/E/D4..7 (7,8,4,5,6,3), blow sensor on A0.
